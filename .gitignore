@@ -5,3 +5,8 @@ tests/output/
 testvideo*
 motion-test/
 eryntest/
+project-history.md
+handoff.md
+test-frames/
+tmp/
+.DS_Store
