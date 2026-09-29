@@ -47,13 +47,16 @@ in between. The full guide, including the zoom workflow, is in
 
 ## Synthetic examples
 
-Three clips with known ground truth, in `examples/clips/`:
+Three clips with known ground truth, in `examples/clips/`. The sheets below
+use `--fps 3`, so the three moments in a cell are a third of a second apart
+and the motion shows inside each cell. The default 12fps puts them 0.08s
+apart: finer timing, smaller shifts.
 
 | clip | what the sheet should show |
 |---|---|
 | `static-noise.mp4` | nothing: motionsheet reports no visible change and writes no sheet |
 | `moving-square.mp4` | a square moving left to right: red at the left, blue at the right |
-| `camera-pan.mp4` | the whole frame translating: colored edges on everything |
+| `camera-pan.mp4` | the camera panning right: every object shifts the same amount, blue on the left, red on the right |
 
 ![moving square](examples/moving-square/page-1.png)
 ![camera pan](examples/camera-pan/page-1.png)
