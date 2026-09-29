@@ -1,10 +1,9 @@
 import argparse
+import io
 import json
-import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 
 import cv2
@@ -23,6 +22,7 @@ PAD = 8
 TEXT_H = 30
 HOLD_FULL = 1.0
 LEGEND_H = 32
+HEADER_H = 24
 LEGEND = [((255, 0, 0), "red = frame 1"), ((0, 255, 0), "green = frame 2"),
           ((0, 0, 255), "blue = frame 3")]
 # Pure blue text is unreadable on the dark sheet, so stamps use lighter tints.
@@ -47,24 +47,63 @@ def detect_cuts(video, duration):
     return [(a.get_seconds(), b.get_seconds()) for a, b in scenes]
 
 
-def changed_frames(video, fps, width, threshold, tmp):
-    """Decode at `fps` and drop near-duplicates with ffmpeg's mpdecimate.
+def native_size(video):
+    """Display size (w, h) of the video, after any rotation."""
+    first = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(video), "-frames:v", "1",
+         "-f", "image2pipe", "-vcodec", "png", "-"],
+        capture_output=True, check=True).stdout
+    return Image.open(io.BytesIO(first)).size
 
+
+def decode(video, fps, width):
+    """Yield (time, rgb uint8 array) at `fps`, scaled to `width`, streamed
+    so long videos never sit in memory all at once."""
+    first = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(video), "-frames:v", "1",
+         "-vf", f"scale={width}:-2", "-f", "image2pipe", "-vcodec", "png", "-"],
+        capture_output=True, check=True).stdout
+    w, h = Image.open(io.BytesIO(first)).size
+    proc = subprocess.Popen(
+        ["ffmpeg", "-v", "error", "-i", str(video), "-an",
+         "-vf", f"fps={fps},scale={w}:{h}", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+        stdout=subprocess.PIPE)
+    size = w * h * 3
+    i = 0
+    while chunk := proc.stdout.read(size):
+        if len(chunk) < size:
+            break
+        yield i / fps, np.frombuffer(chunk, np.uint8).reshape(h, w, 3)
+        i += 1
+    proc.wait()
+
+
+def patch_changes(a, b):
+    """Mean change (0-255) of every 8x8 patch between two gray frames.
+    Patch-based so a small change, like a moving cursor, isn't averaged
+    away by a still screen."""
+    d = np.abs(a.astype(np.int16) - b.astype(np.int16))
+    h, w = (d.shape[0] // 8) * 8, (d.shape[1] // 8) * 8
+    return d[:h, :w].reshape(h // 8, 8, w // 8, 8).mean(axis=(1, 3))
+
+
+def gray(rgb):
+    return cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+
+
+def changed_frames(video, fps, width, min_change, max_gap):
+    """Keep a frame when any 8x8 patch differs from the last kept frame by
+    more than `min_change`, and at least one every `max_gap` seconds.
     Camera shake is kept, not stabilized: it is part of the footage.
-    Returns [(time, rgb uint8 array)].
-    """
-    vf = (f"fps={fps},scale={width}:-2,"
-          f"mpdecimate=hi={threshold}:lo={threshold // 3}:frac=0.5,showinfo")
-    r = subprocess.run(
-        ["ffmpeg", "-hide_banner", "-i", str(video), "-an", "-vf", vf,
-         "-fps_mode", "vfr", str(tmp / "f_%05d.png")],
-        capture_output=True, text=True)
-    if r.returncode != 0:
-        sys.exit(f"ffmpeg failed:\n{r.stderr[-800:]}")
-    times = [float(t) for t in re.findall(r"pts_time:([0-9.]+)", r.stderr)]
-    files = sorted(tmp.glob("f_*.png"))
-    return [(t, np.asarray(Image.open(f).convert("RGB")))
-            for t, f in zip(times, files)]
+    Returns [(time, rgb uint8 array)]."""
+    kept, last_g, last_t = [], None, None
+    for t, rgb in decode(video, fps, width):
+        g = gray(rgb)
+        if (last_g is None or patch_changes(last_g, g).max() > min_change
+                or t - last_t >= max_gap):
+            kept.append((t, rgb.copy()))
+            last_g, last_t = g, t
+    return kept
 
 
 def build_cells(frames, shots):
@@ -109,30 +148,31 @@ def legend(width, font):
     return bar
 
 
-def render_sheets(cells, cols, out):
+def render_sheets(cells, cols, title):
     font = ImageFont.load_default(size=13)
     h, w = cells[0]["image"].shape[:2]
     img_w = (SHEET_MAX - PAD * (cols + 1)) // cols
     img_h = round(img_w * h / w)
     cell_h = img_h + TEXT_H
-    rows = max(1, (SHEET_MAX - LEGEND_H - PAD) // (cell_h + PAD))
+    rows = max(1, (SHEET_MAX - HEADER_H - LEGEND_H - PAD) // (cell_h + PAD))
     sheet_w = cols * img_w + PAD * (cols + 1)
     per_sheet = cols * rows
-    manifest = []
+    manifest, pages = [], []
+    total = (len(cells) + per_sheet - 1) // per_sheet
     for s, first in enumerate(range(0, len(cells), per_sheet), 1):
         chunk = cells[first:first + per_sheet]
         used_rows = (len(chunk) + cols - 1) // cols
-        sheet_h = used_rows * (cell_h + PAD) + PAD + LEGEND_H
+        sheet_h = HEADER_H + used_rows * (cell_h + PAD) + PAD + LEGEND_H
         sheet = Image.new("RGB", (sheet_w, sheet_h), (16, 16, 16))
         d = ImageDraw.Draw(sheet)
         for i, c in enumerate(chunk):
             x = PAD + (i % cols) * (img_w + PAD)
-            y = PAD + (i // cols) * (cell_h + PAD)
+            y = HEADER_H + PAD + (i // cols) * (cell_h + PAD)
             sheet.paste(Image.fromarray(c["image"]).resize((img_w, img_h)), (x, y))
             if c["kind"] == "cut":
                 d.text((x + 2, y + img_h + 3), f"CUT {stamp(c['times'][0])}",
                        fill=(255, 255, 255), font=font)
-                manifest.append(f"sheet {s:03d}, cell {i + 1}: CUT at "
+                manifest.append(f"page {s}, cell {i + 1}: CUT at "
                                 f"{stamp(c['times'][0])} (plain frame)")
                 continue
             slot = img_w // 3
@@ -144,13 +184,16 @@ def render_sheets(cells, cols, out):
                 bar = max(2, round(min(hold / HOLD_FULL, 1) * (slot - 8)))
                 d.rectangle([tx, y + img_h + 20, tx + bar, y + img_h + 24],
                             fill=color)
-            manifest.append(f"sheet {s:03d}, cell {i + 1}: "
+            manifest.append(f"page {s}, cell {i + 1}: "
                             + ", ".join(f"{name} {stamp(t)} (held {h:.2f}s)"
                                         for t, h, name in zip(c["times"], c["holds"],
                                                               ("red", "green", "blue"))))
+        span = f"{stamp(chunk[0]['times'][0])} - {stamp(chunk[-1]['times'][-1])}"
+        d.text((PAD, 6), f"{title}  ·  page {s}/{total}  ·  {span}",
+               fill=(230, 230, 230), font=font)
         sheet.paste(legend(sheet_w, font), (0, sheet_h - LEGEND_H))
-        sheet.save(out / f"sheet-{s:03d}.png")
-    return manifest
+        pages.append(sheet)
+    return manifest, pages
 
 
 def main():
@@ -161,11 +204,15 @@ def main():
     ap.add_argument("-o", "--out", type=Path, help="output folder "
                     "(default: <video name>-motionsheet next to the video)")
     ap.add_argument("--fps", type=float, default=12, help="decode rate (12)")
-    ap.add_argument("--width", type=int, default=480, help="working width (480)")
-    ap.add_argument("--threshold", type=int, default=12000,
-                    help="near-duplicate cutoff for ffmpeg mpdecimate; higher "
-                         "drops more frames (12000)")
-    ap.add_argument("--cols", type=int, default=5, help="cells per row (5)")
+    ap.add_argument("--width", type=int, help="working width in px (default: "
+                    "960 for wide video, 480 for tall)")
+    ap.add_argument("--min-change", type=float, default=12,
+                    help="keep a frame when any 8x8 patch changes by more than "
+                         "this (0-255, default 12)")
+    ap.add_argument("--max-gap", type=float, default=5,
+                    help="keep a frame at least this often, in seconds (5)")
+    ap.add_argument("--cols", type=int, help="cells per row (default: 3 for "
+                    "wide video so text stays readable, 4 for tall)")
     ap.add_argument("--keep-frames", action="store_true",
                     help="also save every kept frame, named by timestamp")
     args = ap.parse_args()
@@ -176,17 +223,21 @@ def main():
         sys.exit(f"no such file: {args.video}")
 
     out = args.out or args.video.with_name(f"{args.video.stem}-motionsheet")
-    (out / "sheets").mkdir(parents=True, exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)
+    w, h = native_size(args.video)
+    wide = w >= h
+    width = args.width or (960 if wide else 480)
+    cols = args.cols or (3 if wide else 4)
 
     duration = probe(args.video)
     shots = detect_cuts(args.video, duration)
-    with tempfile.TemporaryDirectory() as tmp:
-        frames = changed_frames(args.video, args.fps, args.width,
-                                args.threshold, Path(tmp))
+    frames = changed_frames(args.video, args.fps, width,
+                            args.min_change, args.max_gap)
     if not frames:
         sys.exit("no frames decoded")
     cells = build_cells(frames, shots)
-    manifest = render_sheets(cells, args.cols, out / "sheets")
+    manifest, pages = render_sheets(cells, cols, args.video.name)
+    pages[0].save(out / "sheets.pdf", save_all=True, append_images=pages[1:])
 
     if args.keep_frames:
         (out / "frames").mkdir(exist_ok=True)
