@@ -4,3 +4,4 @@ __pycache__/
 tests/output/
 testvideo*
 motion-test/
+eryntest/

@@ -23,15 +23,24 @@ TEXT_H = 30
 HOLD_FULL = 1.0
 LEGEND_H = 32
 HEADER_H = 24
-LEGEND = [((255, 0, 0), "red = frame 1"), ((0, 255, 0), "green = frame 2"),
-          ((0, 0, 255), "blue = frame 3")]
-# Pure blue text is unreadable on the dark sheet, so stamps use lighter tints.
-STAMP_COLORS = [(255, 90, 90), (90, 255, 90), (110, 150, 255)]
+LEGEND = ("in the pictures: red = 1st time, green = 2nd, blue = 3rd. "
+          "Any color is change; labels are gray so they never look like change.")
+LABEL = (220, 220, 220)
+BAR = (150, 150, 150)
+# Ring colors match the stack channels; pure blue is too dark on the sheet.
+RING_COLORS = [(255, 90, 90), (90, 255, 90), (110, 150, 255)]
 RING_DIFF = 25          # gray-level difference that counts for a ring
 RING_MAX_AREA = 0.02    # regions over 2% of the frame get no ring
+VISIBLE_SPREAD = 30     # channel spread that reads as color in a stack
+VISIBLE_MIN_PIXELS = 20 # fewer colored pixels than this: the cell is dropped
+WHOLE_PICTURE = 0.30    # changed share over which a cell is "most of the picture"
+MAX_REGIONS = 5         # changed regions listed per cell
+RING_MAX_COUNT = 6      # more small changes than this in a frame: no rings
 PREVIEW_MAX = 1536      # long side of each --stats preview frame
 PREVIEW_COUNT = 6
 QUIET_GAP = 3.0         # seconds without change reported as a quiet stretch
+MAX_FAST_WINDOW = 10.0  # longest window allowed with --fps above 12
+MAX_FPS = 60
 BUSY_BIN = 5.0          # seconds per bin when finding the busiest stretches
 
 
@@ -44,9 +53,9 @@ def probe(video):
 
 
 def parse_time(text):
-    """"75", "1:15" or "0:01:15" -> seconds."""
+    """"75", "1:15", "0:01:15" or "01m15.00s" (the frame file format) -> seconds."""
     seconds = 0.0
-    for part in text.split(":"):
+    for part in text.rstrip("s").replace("m", ":").split(":"):
         seconds = seconds * 60 + float(part)
     return seconds
 
@@ -60,6 +69,12 @@ def detect_cuts(video, start, end):
     if not scenes:
         return [(start, end)]
     return [(a.get_seconds(), b.get_seconds()) for a, b in scenes]
+
+
+def fps_allowed(fps, window):
+    """Above the default rate, only short windows, so a zoom can't cost as
+    much as a whole video."""
+    return fps <= 12 or (fps <= MAX_FPS and window <= MAX_FAST_WINDOW)
 
 
 def native_size(video):
@@ -134,7 +149,8 @@ def changed_frames(video, fps, width, min_change, max_gap, start, end):
 def draw_rings(stack, grays):
     """Circle each small region that appears in only one of the 3 frames,
     in that frame's color, so small movers like a pointer stand out. Large
-    changes (scrolls, page loads) are skipped: they're already visible."""
+    changes (scrolls, page loads) are skipped: they're already visible. So
+    is a frame with many small changes: rings only help when there are few."""
     img = Image.fromarray(stack)
     d = ImageDraw.Draw(img)
     h, w = stack.shape[:2]
@@ -144,19 +160,81 @@ def draw_rings(stack, grays):
         only_here = np.min([cv2.absdiff(g, o) for o in others], axis=0)
         mask = cv2.dilate((only_here > RING_DIFF).astype(np.uint8), np.ones((5, 5)))
         n, _, stats, centers = cv2.connectedComponentsWithStats(mask)
-        for i in range(1, n):
-            if stats[i, cv2.CC_STAT_AREA] > RING_MAX_AREA * w * h:
-                continue
+        small = [i for i in range(1, n)
+                 if stats[i, cv2.CC_STAT_AREA] <= RING_MAX_AREA * w * h]
+        if len(small) > RING_MAX_COUNT:
+            continue  # many small changes (text, scrolling): rings would bury the picture
+        for i in small:
             x, y = centers[i]
             r = max(w // 60, int(max(stats[i, 2], stats[i, 3]) * 0.8))
-            d.ellipse([x - r, y - r, x + r, y + r], outline=STAMP_COLORS[k],
+            d.ellipse([x - r, y - r, x + r, y + r], outline=RING_COLORS[k],
                       width=width)
     return np.asarray(img)
 
 
+def place(x, y, w, h):
+    """Rough position name, e.g. "top-left", for a point in a w x h picture."""
+    row = ("top", "middle", "bottom")[min(int(3 * y / h), 2)]
+    col = ("left", "center", "right")[min(int(3 * x / w), 2)]
+    return f"{row}-{col}"
+
+
+def change_regions(masks):
+    """Changed regions of the union of `masks`, largest first, as
+    (label image, stats, centers, index) with nearby bits (letters of one
+    word) merged into one region."""
+    both = np.max(masks, axis=0).astype(np.uint8)
+    k = max(3, both.shape[1] // 60)
+    merged = cv2.dilate(both, np.ones((k, k), np.uint8))
+    n, labels, stats, centers = cv2.connectedComponentsWithStats(merged)
+    order = sorted(range(1, n), key=lambda i: -stats[i, cv2.CC_STAT_AREA])
+    return labels, stats, centers, order
+
+
+def describe_changes(grays, times, prev):
+    """What changed in a cell, as text: where, how big, and when, per
+    region. `prev` is the previous cell's last frame (None after a cut), so
+    a change between two cells is reported too."""
+    h, w = grays[0].shape
+    steps = [cv2.absdiff(a, b) > RING_DIFF for a, b in zip(grays, grays[1:])]
+    if np.max(steps, axis=0).mean() > WHOLE_PICTURE:
+        return ["most of the picture changed"]
+    back = cv2.absdiff(grays[0], grays[-1]) > RING_DIFF
+    labels, stats, centers, order = change_regions(steps)
+    lines = []
+    for i in order[:MAX_REGIONS]:
+        region = labels == i
+        n = max(1, max(s[region].sum() for s in steps))
+        when = [s[region].sum() > 0.2 * n for s in steps]
+        x, y, bw, bh = stats[i, :4]
+        where = (f"{place(*centers[i], w, h)} (x {100 * x // w}-{100 * (x + bw) // w}%, "
+                 f"y {100 * y // h}-{100 * (y + bh) // h}%), "
+                 f"{region.mean():.1%} of picture")
+        if all(when) and back[region].sum() < 0.2 * n:
+            what = (f"blink: different only at {stamp(times[1])} "
+                    "(appeared and went, or passed through)")
+        elif all(when):
+            what = f"changed at {stamp(times[1])} and again at {stamp(times[2])}"
+        else:
+            what = f"changed at {stamp(times[1 if when[0] else 2])}"
+        lines.append(f"{where}: {what}")
+    if len(order) > MAX_REGIONS:
+        lines.append(f"+{len(order) - MAX_REGIONS} smaller changes")
+    if prev is not None:
+        gap = cv2.absdiff(prev, grays[0]) > RING_DIFF
+        if gap.mean() > WHOLE_PICTURE:
+            lines.append("before this cell: most of the picture changed")
+        elif gap.any():
+            labels, stats, centers, order = change_regions([gap])
+            lines.append("before this cell: changed at " + ", ".join(
+                place(*centers[i], w, h) for i in order[:MAX_REGIONS]))
+    return lines
+
+
 def build_cells(frames, shots, rings, color):
-    """Kept frames in runs of 3 -> RGB stack cells; a plain frame marks each cut."""
-    cells = []
+    """Kept frames in runs of 3 -> RGB stack cells; a plain frame marks each
+    cut. A cell with no visible color is dropped: it shows nothing."""
+    cells, dropped = [], 0
     for n, (start, end) in enumerate(shots):
         in_shot = [f for f in frames if start <= f[0] < end]
         if not in_shot:
@@ -167,36 +245,39 @@ def build_cells(frames, shots, rings, color):
         # How long each kept frame stood before the next change (or the cut).
         holds = [b[0] - a[0] for a, b in zip(in_shot, in_shot[1:])]
         holds.append(end - in_shot[-1][0])
+        prev = None  # last frame of the previous cell in this shot
         for i in range(0, len(in_shot), 3):
             g = in_shot[i:i + 3]
             grays = [gray(img) for _, img in g]
+            before, prev = prev, grays[-1]
             # A shot's last run can come up short; repeating its final frame
             # means "no further change", which reads correctly in the stack.
             grays += [grays[-1]] * (3 - len(grays))
             image = rgb_stack([x.astype(np.float32) / 255 for x in grays])
+            spread = image.max(axis=2).astype(int) - image.min(axis=2)
+            if (spread > VISIBLE_SPREAD).sum() < VISIBLE_MIN_PIXELS:
+                dropped += 1  # no visible color: nothing to see in this cell
+                continue
             if color:
                 image = true_color(image, g[len(g) // 2][1], grays)
             if rings:
                 image = draw_rings(image, grays)
             cells.append({"kind": "stack", "times": [t for t, _ in g],
-                          "holds": holds[i:i + 3], "image": image})
-    return cells
+                          "holds": holds[i:i + 3], "image": image,
+                          "changes": describe_changes(grays, [t for t, _ in g]
+                                                      + [g[-1][0]] * (3 - len(g)),
+                                                      before)})
+    return cells, dropped
 
 
 def stamp(t):
     m, s = divmod(t, 60)
-    return f"{int(m):02d}:{s:05.2f}"
+    return f"{int(m):02d}:{s:06.3f}"
 
 
 def legend(width, font):
     bar = Image.new("RGB", (width, LEGEND_H), (24, 24, 24))
-    d = ImageDraw.Draw(bar)
-    sw = (width - 2 * PAD) // 3
-    for i, (color, label) in enumerate(LEGEND):
-        x = PAD + i * sw
-        d.rectangle([x, 6, x + sw - 4, LEGEND_H - 6], fill=color)
-        d.text((x + 6, 9), label, fill=(0, 0, 0) if i < 2 else (255, 255, 255),
-               font=font)
+    ImageDraw.Draw(bar).text((PAD, 9), LEGEND, fill=LABEL, font=font)
     return bar
 
 
@@ -218,28 +299,33 @@ def render_sheets(cells, cols, title):
         sheet = Image.new("RGB", (sheet_w, sheet_h), (16, 16, 16))
         d = ImageDraw.Draw(sheet)
         for i, c in enumerate(chunk):
+            num = f"#{first + i + 1}"
             x = PAD + (i % cols) * (img_w + PAD)
             y = HEADER_H + PAD + (i // cols) * (cell_h + PAD)
             sheet.paste(Image.fromarray(c["image"]).resize((img_w, img_h)), (x, y))
+            # Cell number in a dark tab on the picture's top-left corner.
+            tw = d.textlength(num, font=font) + 8
+            d.rectangle([x, y, x + tw, y + 17], fill=(16, 16, 16))
+            d.text((x + 4, y + 2), num, fill=LABEL, font=font)
             if c["kind"] == "cut":
                 d.text((x + 2, y + img_h + 3), f"CUT {stamp(c['times'][0])}",
                        fill=(255, 255, 255), font=font)
-                manifest.append(f"page {s}, cell {i + 1}: CUT at "
+                manifest.append(f"{num} (page {s}): CUT at "
                                 f"{stamp(c['times'][0])} (plain frame)")
                 continue
             slot = img_w // 3
-            for k, (t, hold, color) in enumerate(zip(c["times"], c["holds"],
-                                                     STAMP_COLORS)):
+            for k, (t, hold) in enumerate(zip(c["times"], c["holds"])):
                 tx = x + 2 + k * slot
-                d.text((tx, y + img_h + 3), stamp(t), fill=color, font=font)
+                d.text((tx, y + img_h + 3), stamp(t), fill=LABEL, font=font)
                 # Bar length = how long this frame held; full slot = HOLD_FULL s.
                 bar = max(2, round(min(hold / HOLD_FULL, 1) * (slot - 8)))
                 d.rectangle([tx, y + img_h + 20, tx + bar, y + img_h + 24],
-                            fill=color)
-            manifest.append(f"page {s}, cell {i + 1}: "
+                            fill=BAR)
+            manifest.append(f"{num} (page {s}): "
                             + ", ".join(f"{name} {stamp(t)} (held {h:.2f}s)"
                                         for t, h, name in zip(c["times"], c["holds"],
-                                                              ("red", "green", "blue"))))
+                                                              ("red", "green", "blue")))
+                            + "".join(f"\n  - {x}" for x in c.get("changes", [])))
         span = f"{stamp(chunk[0]['times'][0])} - {stamp(chunk[-1]['times'][-1])}"
         d.text((PAD, 6), f"{title}  ·  page {s}/{total}  ·  {span}",
                fill=(230, 230, 230), font=font)
@@ -256,6 +342,28 @@ def grab_frame(video, t):
          "-f", "image2pipe", "-vcodec", "png", "-"],
         capture_output=True, check=True).stdout
     return Image.open(io.BytesIO(png))
+
+
+def grab_frames(video, t, count):
+    """`count` consecutive frames from `t` at the video's own frame rate (none
+    skipped), fit within PREVIEW_MAX, as [(time, image)]. Times come from the
+    video itself, so variable-rate screen recordings are timed correctly."""
+    proc = subprocess.run(
+        ["ffmpeg", "-v", "info", "-ss", str(t), "-copyts", "-i", str(video),
+         "-frames:v", str(count), "-an",
+         "-vf", f"showinfo,scale={PREVIEW_MAX}:{PREVIEW_MAX}:"
+                "force_original_aspect_ratio=decrease",
+         "-f", "image2pipe", "-vcodec", "png", "-"],
+        capture_output=True, check=True)
+    times = [float(line.split("pts_time:")[1].split()[0])
+             for line in proc.stderr.decode().splitlines() if "pts_time:" in line]
+    images, data = [], proc.stdout
+    while data:
+        img = Image.open(io.BytesIO(data))
+        img.load()
+        images.append(img)
+        data = data[data.index(b"IEND") + 8:]
+    return list(zip(times, images))
 
 
 def write_stats(video, out, start, end, shots, frames, decoded, areas, size):
@@ -334,6 +442,14 @@ def main():
     ap.add_argument("--stats", action="store_true",
                     help="don't render sheets; print measurements and save a "
                          "few full-detail preview frames, to help choose settings")
+    ap.add_argument("--no-sheets", action="store_true",
+                    help="write only MANIFEST.md (cell times and the changes in "
+                         "each cell as text), no PDF")
+    ap.add_argument("--frames", metavar="TIME",
+                    help="don't render sheets; save full-detail consecutive frames "
+                         "from TIME, none skipped, to look closely at one moment")
+    ap.add_argument("--count", type=int, default=9, choices=range(1, 10),
+                    metavar="1-9", help="how many frames --frames saves (9)")
     args = ap.parse_args()
 
     if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
@@ -354,6 +470,17 @@ def main():
     if not 0 <= start < end:
         sys.exit(f"bad window: {args.start} to {args.end} (video is {stamp(duration)})")
 
+    if args.frames:
+        for t, img in grab_frames(args.video, parse_time(args.frames), args.count):
+            name = f"frame-{stamp(t).replace(':', 'm')}s.png"
+            img.save(out / name)
+            print(name)
+        return
+
+    if not fps_allowed(args.fps, end - start):
+        sys.exit(f"--fps above 12 is only for a window of at most "
+                 f"{MAX_FAST_WINDOW:.0f}s (use --start and --end), and at most {MAX_FPS}")
+
     shots = detect_cuts(args.video, start, end)
     frames, decoded, areas = changed_frames(args.video, args.fps, width,
                                             args.min_change, args.max_gap, start, end)
@@ -362,9 +489,10 @@ def main():
     if args.stats:
         write_stats(args.video, out, start, end, shots, frames, decoded, areas, (w, h))
         return
-    cells = build_cells(frames, shots, args.rings, args.true_color)
+    cells, dropped = build_cells(frames, shots, args.rings, args.true_color)
     manifest, pages = render_sheets(cells, cols, args.video.name)
-    pages[0].save(out / "sheets.pdf", save_all=True, append_images=pages[1:])
+    if not args.no_sheets:
+        pages[0].save(out / "sheets.pdf", save_all=True, append_images=pages[1:])
 
     if args.keep_frames:
         (out / "frames").mkdir(exist_ok=True)
@@ -373,5 +501,5 @@ def main():
 
     (out / "MANIFEST.md").write_text(
         f"# {args.video.name}\n\n{len(shots)} shots, {len(frames)} changed frames, "
-        f"{len(cells)} cells\n\n" + "\n".join(f"- {m}" for m in manifest) + "\n")
+        f"{len(cells)} cells ({dropped} more had no visible change and were dropped)\n\n" + "\n".join(f"- {m}" for m in manifest) + "\n")
     print(f"{len(cells)} cells -> {out}")
