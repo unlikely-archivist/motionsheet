@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from motionsheet.stack import rgb_stack
+from motionsheet.stack import rgb_stack, true_color
 
 INSTALL_FFMPEG = """ffmpeg not found. Install it:
   macOS:   brew install ffmpeg
@@ -154,7 +154,7 @@ def draw_rings(stack, grays):
     return np.asarray(img)
 
 
-def build_cells(frames, shots, rings):
+def build_cells(frames, shots, rings, color):
     """Kept frames in runs of 3 -> RGB stack cells; a plain frame marks each cut."""
     cells = []
     for n, (start, end) in enumerate(shots):
@@ -174,6 +174,8 @@ def build_cells(frames, shots, rings):
             # means "no further change", which reads correctly in the stack.
             grays += [grays[-1]] * (3 - len(grays))
             image = rgb_stack([x.astype(np.float32) / 255 for x in grays])
+            if color:
+                image = true_color(image, g[len(g) // 2][1], grays)
             if rings:
                 image = draw_rings(image, grays)
             cells.append({"kind": "stack", "times": [t for t, _ in g],
@@ -323,6 +325,9 @@ def main():
                     help="also save every kept frame, named by timestamp")
     ap.add_argument("--start", help="start of the window to render, e.g. 1:15")
     ap.add_argument("--end", help="end of the window to render, e.g. 1:30")
+    ap.add_argument("--true-color", action="store_true",
+                    help="show still areas in the video's own color; only "
+                         "changed areas use the red/green/blue overlay")
     ap.add_argument("--rings", action="store_true",
                     help="circle small changes (pointer, small sprites) in the "
                          "color of the frame they appear in")
@@ -357,7 +362,7 @@ def main():
     if args.stats:
         write_stats(args.video, out, start, end, shots, frames, decoded, areas, (w, h))
         return
-    cells = build_cells(frames, shots, args.rings)
+    cells = build_cells(frames, shots, args.rings, args.true_color)
     manifest, pages = render_sheets(cells, cols, args.video.name)
     pages[0].save(out / "sheets.pdf", save_all=True, append_images=pages[1:])
 

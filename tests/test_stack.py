@@ -42,3 +42,27 @@ def test_rejects_wrong_frame_count():
     import pytest
     with pytest.raises(ValueError):
         rgb_stack([np.zeros((2, 2))] * 4)
+
+
+def test_true_color_keeps_still_areas_in_video_color():
+    from motionsheet.stack import true_color
+    rng = np.random.default_rng(1)
+    color = rng.integers(0, 256, (H, W, 3), dtype=np.uint8)
+    gray = color.mean(axis=2).astype(np.uint8)
+    stack = rgb_stack([gray / 255] * 3)
+    assert (true_color(stack, color, [gray] * 3) == color).all()
+
+
+def test_true_color_shows_motion_as_rgb():
+    from motionsheet.stack import true_color
+    frames = []
+    for i in range(3):
+        f = np.zeros((H, W), np.uint8)
+        f[20:20 + SIZE, 20 + i * 30:20 + i * 30 + SIZE] = 255
+        frames.append(f)
+    stack = rgb_stack([f / 255 for f in frames])
+    color = np.repeat(frames[1][..., None], 3, axis=2)
+    out = true_color(stack, color, frames)
+    assert tuple(out[30, 30]) == (255, 0, 0)   # first position still red
+    assert tuple(out[30, 90]) == (0, 0, 255)   # last position still blue
+    assert tuple(out[5, 5]) == (0, 0, 0)       # untouched background: video color

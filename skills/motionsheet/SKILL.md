@@ -59,8 +59,13 @@ The timestamps under the cell use the same colors.
 - **Colored copies are motion.** An object's red copy is where it was first,
   green next, blue where it ended up, so red → green → blue is the direction
   of movement.
-- **Yellow (red+green), cyan (green+blue), or white** means positions
-  overlap; a thin fringe means a small movement.
+- **The colors are moments, not colors.** Something shown in one or two
+  channels was present in only those moments: pure red = only in the first,
+  yellow (red+green) = first and second but gone by the third, cyan
+  (green+blue) = appeared after the first, pure blue = only in the last.
+  Describe it as appearing, disappearing, blinking, or moving, never as
+  changing color. White means present in all three (overlapping); a thin
+  fringe means a small movement.
 - **Colored edges across the whole picture** mean the camera or the whole
   screen moved (pan, shake, scroll), not one object.
 - **Rings** (with `--rings`) circle small changes in the color of the frame
