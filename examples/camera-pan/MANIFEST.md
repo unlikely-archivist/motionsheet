@@ -1,0 +1,128 @@
+# camera-pan.mp4
+
+1 shots, 60 changed frames, 20 cells (0 more had no visible change and were dropped)
+
+- #1 (page 1): red 00:00.000 (held 0.08s), green 00:00.083 (held 0.08s), blue 00:00.167 (held 0.08s)
+  - middle-left (x 21-25%, y 20-100%), 3.2% of picture: changed at 00:00.083 and again at 00:00.167
+  - middle-center (x 38-42%, y 20-100%), 3.2% of picture: changed at 00:00.083 and again at 00:00.167
+  - middle-right (x 79-85%, y 23-58%), 1.9% of picture: changed at 00:00.083 and again at 00:00.167
+  - middle-center (x 58-64%, y 23-58%), 1.9% of picture: changed at 00:00.083 and again at 00:00.167
+- #2 (page 1): red 00:00.250 (held 0.08s), green 00:00.333 (held 0.08s), blue 00:00.417 (held 0.08s)
+  - middle-left (x 18-22%, y 20-100%), 3.2% of picture: changed at 00:00.333 and again at 00:00.417
+  - middle-center (x 34-38%, y 20-100%), 3.2% of picture: changed at 00:00.333 and again at 00:00.417
+  - middle-right (x 75-81%, y 23-58%), 1.9% of picture: changed at 00:00.333 and again at 00:00.417
+  - middle-center (x 54-60%, y 23-58%), 1.9% of picture: changed at 00:00.333 and again at 00:00.417
+  - before this cell: changed at middle-center, middle-left, middle-right, middle-center
+- #3 (page 1): red 00:00.500 (held 0.08s), green 00:00.583 (held 0.08s), blue 00:00.667 (held 0.08s)
+  - middle-left (x 14-18%, y 20-100%), 3.2% of picture: changed at 00:00.583 and again at 00:00.667
+  - middle-left (x 31-35%, y 20-100%), 3.2% of picture: changed at 00:00.583 and again at 00:00.667
+  - middle-center (x 51-56%, y 23-58%), 1.9% of picture: changed at 00:00.583 and again at 00:00.667
+  - middle-right (x 71-77%, y 23-58%), 1.9% of picture: changed at 00:00.583 and again at 00:00.667
+  - middle-right (x 98-100%, y 27-39%), 0.1% of picture: changed at 00:00.667
+  - before this cell: changed at middle-left, middle-center, middle-center, middle-right
+- #4 (page 1): red 00:00.750 (held 0.08s), green 00:00.833 (held 0.08s), blue 00:00.917 (held 0.08s)
+  - middle-left (x 10-14%, y 20-100%), 3.2% of picture: changed at 00:00.833 and again at 00:00.917
+  - middle-left (x 27-31%, y 20-100%), 3.2% of picture: changed at 00:00.833 and again at 00:00.917
+  - middle-center (x 47-52%, y 23-58%), 1.9% of picture: changed at 00:00.833 and again at 00:00.917
+  - middle-right (x 68-73%, y 23-58%), 1.9% of picture: changed at 00:00.833 and again at 00:00.917
+  - middle-right (x 94-100%, y 20-46%), 1.0% of picture: changed at 00:00.833 and again at 00:00.917
+  - before this cell: changed at middle-left, middle-left, middle-center, middle-right, middle-right
+- #5 (page 1): red 00:01.000 (held 0.08s), green 00:01.083 (held 0.08s), blue 00:01.167 (held 0.08s)
+  - middle-left (x 6-10%, y 20-100%), 3.2% of picture: changed at 00:01.083 and again at 00:01.167
+  - middle-left (x 23-27%, y 20-100%), 3.2% of picture: changed at 00:01.083 and again at 00:01.167
+  - middle-right (x 91-100%, y 19-100%), 3.0% of picture: changed at 00:01.083 and again at 00:01.167
+  - middle-center (x 43-49%, y 23-58%), 1.9% of picture: changed at 00:01.083 and again at 00:01.167
+  - middle-right (x 64-70%, y 23-58%), 1.9% of picture: changed at 00:01.083 and again at 00:01.167
+  - before this cell: changed at middle-left, middle-left, middle-center, middle-right, middle-right
+- #6 (page 1): red 00:01.250 (held 0.08s), green 00:01.333 (held 0.08s), blue 00:01.417 (held 0.08s)
+  - middle-right (x 87-100%, y 19-100%), 5.3% of picture: changed at 00:01.333 and again at 00:01.417
+  - middle-left (x 3-7%, y 20-100%), 3.2% of picture: changed at 00:01.333 and again at 00:01.417
+  - middle-left (x 19-23%, y 20-100%), 3.2% of picture: changed at 00:01.333 and again at 00:01.417
+  - middle-center (x 39-45%, y 23-58%), 1.9% of picture: changed at 00:01.333 and again at 00:01.417
+  - middle-center (x 60-66%, y 23-58%), 1.9% of picture: changed at 00:01.333 and again at 00:01.417
+  - before this cell: changed at middle-right, middle-left, middle-left, middle-center, middle-center
+- #7 (page 1): red 00:01.500 (held 0.08s), green 00:01.583 (held 0.08s), blue 00:01.667 (held 0.08s)
+  - middle-right (x 83-100%, y 19-100%), 6.3% of picture: changed at 00:01.583 and again at 00:01.667
+  - middle-left (x 16-20%, y 20-100%), 3.2% of picture: changed at 00:01.583 and again at 00:01.667
+  - middle-left (x 0-3%, y 20-100%), 2.6% of picture: changed at 00:01.583 and again at 00:01.667
+  - middle-center (x 36-41%, y 23-58%), 1.9% of picture: changed at 00:01.583 and again at 00:01.667
+  - middle-center (x 56-62%, y 23-58%), 1.9% of picture: changed at 00:01.583 and again at 00:01.667
+  - before this cell: changed at middle-right, middle-left, middle-left, bottom-right, middle-center
+- #8 (page 1): red 00:01.750 (held 0.08s), green 00:01.833 (held 0.08s), blue 00:01.917 (held 0.08s)
+  - middle-right (x 79-98%, y 19-100%), 6.7% of picture: changed at 00:01.833 and again at 00:01.917
+  - middle-left (x 12-16%, y 20-100%), 3.2% of picture: changed at 00:01.833 and again at 00:01.917
+  - middle-center (x 32-37%, y 23-58%), 1.9% of picture: changed at 00:01.833 and again at 00:01.917
+  - middle-center (x 53-58%, y 23-58%), 1.9% of picture: changed at 00:01.833 and again at 00:01.917
+  - before this cell: changed at middle-right, middle-left, middle-center, middle-center
+- #9 (page 1): red 00:02.000 (held 0.08s), green 00:02.083 (held 0.08s), blue 00:02.167 (held 0.08s)
+  - middle-right (x 76-95%, y 19-100%), 6.7% of picture: changed at 00:02.083 and again at 00:02.167
+  - middle-left (x 8-12%, y 20-100%), 3.2% of picture: changed at 00:02.083 and again at 00:02.167
+  - middle-left (x 28-34%, y 23-58%), 1.9% of picture: changed at 00:02.083 and again at 00:02.167
+  - middle-center (x 49-55%, y 23-58%), 1.9% of picture: changed at 00:02.083 and again at 00:02.167
+  - before this cell: changed at middle-right, middle-left, middle-left, middle-center
+- #10 (page 1): red 00:02.250 (held 0.08s), green 00:02.333 (held 0.08s), blue 00:02.417 (held 0.08s)
+  - middle-right (x 72-91%, y 19-100%), 6.7% of picture: changed at 00:02.333 and again at 00:02.417
+  - middle-left (x 4-8%, y 20-100%), 3.2% of picture: changed at 00:02.333 and again at 00:02.417
+  - middle-left (x 24-30%, y 23-58%), 1.9% of picture: changed at 00:02.333 and again at 00:02.417
+  - middle-center (x 45-51%, y 23-58%), 1.9% of picture: changed at 00:02.333 and again at 00:02.417
+  - before this cell: changed at middle-right, middle-left, middle-left, middle-center
+- #11 (page 1): red 00:02.500 (held 0.08s), green 00:02.583 (held 0.08s), blue 00:02.667 (held 0.08s)
+  - middle-right (x 68-87%, y 19-100%), 6.7% of picture: changed at 00:02.583 and again at 00:02.667
+  - middle-left (x 1-5%, y 20-100%), 3.2% of picture: changed at 00:02.583 and again at 00:02.667
+  - middle-left (x 21-26%, y 23-58%), 1.9% of picture: changed at 00:02.583 and again at 00:02.667
+  - middle-center (x 41-47%, y 23-58%), 1.9% of picture: changed at 00:02.583 and again at 00:02.667
+  - before this cell: changed at middle-right, middle-left, middle-left, middle-center
+- #12 (page 1): red 00:02.750 (held 0.08s), green 00:02.833 (held 0.08s), blue 00:02.917 (held 0.08s)
+  - middle-right (x 64-83%, y 19-100%), 6.7% of picture: changed at 00:02.833 and again at 00:02.917
+  - middle-left (x 17-22%, y 23-58%), 1.9% of picture: changed at 00:02.833 and again at 00:02.917
+  - middle-center (x 38-43%, y 23-58%), 1.9% of picture: changed at 00:02.833 and again at 00:02.917
+  - middle-right (x 97-100%, y 13-75%), 1.8% of picture: changed at 00:02.833 and again at 00:02.917
+  - middle-left (x 0-1%, y 20-100%), 1.2% of picture: changed at 00:02.833
+  - before this cell: changed at middle-right, middle-left, middle-left, middle-center
+- #13 (page 2): red 00:03.000 (held 0.08s), green 00:03.083 (held 0.08s), blue 00:03.167 (held 0.08s)
+  - middle-right (x 61-80%, y 19-100%), 6.7% of picture: changed at 00:03.083 and again at 00:03.167
+  - middle-right (x 93-97%, y 13-75%), 2.5% of picture: changed at 00:03.083 and again at 00:03.167
+  - middle-left (x 13-19%, y 23-58%), 1.9% of picture: changed at 00:03.083 and again at 00:03.167
+  - middle-center (x 34-40%, y 23-58%), 1.9% of picture: changed at 00:03.083 and again at 00:03.167
+  - before this cell: changed at middle-right, middle-right, middle-left, middle-center
+- #14 (page 2): red 00:03.250 (held 0.08s), green 00:03.333 (held 0.08s), blue 00:03.417 (held 0.08s)
+  - middle-right (x 57-76%, y 19-100%), 6.7% of picture: changed at 00:03.333 and again at 00:03.417
+  - middle-right (x 89-93%, y 13-75%), 2.5% of picture: changed at 00:03.333 and again at 00:03.417
+  - middle-left (x 9-15%, y 23-58%), 1.9% of picture: changed at 00:03.333 and again at 00:03.417
+  - middle-center (x 30-36%, y 23-58%), 1.9% of picture: changed at 00:03.333 and again at 00:03.417
+  - before this cell: changed at middle-right, middle-right, middle-left, middle-center
+- #15 (page 2): red 00:03.500 (held 0.08s), green 00:03.583 (held 0.08s), blue 00:03.667 (held 0.08s)
+  - middle-center (x 53-72%, y 19-100%), 6.7% of picture: changed at 00:03.583 and again at 00:03.667
+  - middle-right (x 85-90%, y 13-75%), 2.5% of picture: changed at 00:03.583 and again at 00:03.667
+  - middle-left (x 6-11%, y 23-58%), 1.9% of picture: changed at 00:03.583 and again at 00:03.667
+  - middle-left (x 26-32%, y 23-58%), 1.9% of picture: changed at 00:03.583 and again at 00:03.667
+  - before this cell: changed at middle-center, middle-right, middle-left, middle-left
+- #16 (page 2): red 00:03.750 (held 0.08s), green 00:03.833 (held 0.08s), blue 00:03.917 (held 0.08s)
+  - middle-center (x 49-68%, y 19-100%), 6.7% of picture: changed at 00:03.833 and again at 00:03.917
+  - middle-right (x 82-86%, y 13-75%), 2.5% of picture: changed at 00:03.833 and again at 00:03.917
+  - middle-left (x 2-7%, y 23-58%), 1.9% of picture: changed at 00:03.833 and again at 00:03.917
+  - middle-left (x 23-28%, y 23-58%), 1.9% of picture: changed at 00:03.833 and again at 00:03.917
+  - before this cell: changed at middle-center, middle-right, middle-left, middle-left
+- #17 (page 2): red 00:04.000 (held 0.08s), green 00:04.083 (held 0.08s), blue 00:04.167 (held 0.08s)
+  - middle-center (x 46-65%, y 19-100%), 6.7% of picture: changed at 00:04.083 and again at 00:04.167
+  - middle-right (x 78-82%, y 13-75%), 2.5% of picture: changed at 00:04.083 and again at 00:04.167
+  - middle-left (x 19-25%, y 23-58%), 1.9% of picture: changed at 00:04.083 and again at 00:04.167
+  - middle-left (x 0-4%, y 23-58%), 1.4% of picture: changed at 00:04.083 and again at 00:04.167
+  - before this cell: changed at middle-center, middle-right, middle-left, middle-left
+- #18 (page 2): red 00:04.250 (held 0.08s), green 00:04.333 (held 0.08s), blue 00:04.417 (held 0.08s)
+  - middle-center (x 42-61%, y 19-100%), 6.7% of picture: changed at 00:04.333 and again at 00:04.417
+  - middle-right (x 74-78%, y 13-75%), 2.5% of picture: changed at 00:04.333 and again at 00:04.417
+  - middle-left (x 15-21%, y 23-58%), 1.9% of picture: changed at 00:04.333 and again at 00:04.417
+  - before this cell: changed at middle-center, middle-right, middle-left, middle-left
+- #19 (page 2): red 00:04.500 (held 0.08s), green 00:04.583 (held 0.08s), blue 00:04.667 (held 0.08s)
+  - middle-center (x 38-57%, y 19-100%), 6.7% of picture: changed at 00:04.583 and again at 00:04.667
+  - middle-right (x 70-75%, y 13-75%), 2.5% of picture: changed at 00:04.583 and again at 00:04.667
+  - middle-right (x 96-100%, y 13-75%), 2.4% of picture: changed at 00:04.583 and again at 00:04.667
+  - middle-left (x 11-17%, y 23-58%), 1.9% of picture: changed at 00:04.583 and again at 00:04.667
+  - before this cell: changed at middle-center, middle-right, middle-left, middle-right
+- #20 (page 2): red 00:04.750 (held 0.08s), green 00:04.833 (held 0.08s), blue 00:04.917 (held 0.08s)
+  - middle-center (x 34-53%, y 19-100%), 6.7% of picture: changed at 00:04.833 and again at 00:04.917
+  - middle-right (x 67-71%, y 13-75%), 2.5% of picture: changed at 00:04.833 and again at 00:04.917
+  - middle-right (x 92-96%, y 13-75%), 2.5% of picture: changed at 00:04.833 and again at 00:04.917
+  - middle-left (x 8-13%, y 23-58%), 1.9% of picture: changed at 00:04.833 and again at 00:04.917
+  - before this cell: changed at middle-center, middle-right, middle-right, middle-left

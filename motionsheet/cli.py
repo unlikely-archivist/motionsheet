@@ -490,6 +490,9 @@ def main():
         write_stats(args.video, out, start, end, shots, frames, decoded, areas, (w, h))
         return
     cells, dropped = build_cells(frames, shots, args.rings, args.true_color)
+    if not cells:
+        sys.exit(f"no visible change in {args.video.name}: nothing to show "
+                 f"(try a lower --min-change)")
     manifest, pages = render_sheets(cells, cols, args.video.name)
     if not args.no_sheets:
         pages[0].save(out / "sheets.pdf", save_all=True, append_images=pages[1:])

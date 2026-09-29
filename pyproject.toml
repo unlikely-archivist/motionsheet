@@ -6,11 +6,16 @@ build-backend = "setuptools.build_meta"
 name = "motionsheet"
 version = "0.1.0"
 description = "Turn a video into contact sheets that show motion, not just content."
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
 dependencies = ["av", "numpy", "opencv-python-headless", "pillow", "scenedetect"]
 
 [project.optional-dependencies]
 test = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/unlikely-archivist/motionsheet"
 
 [project.scripts]
 motionsheet = "motionsheet.cli:main"

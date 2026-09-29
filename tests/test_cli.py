@@ -93,6 +93,13 @@ def test_cells_with_no_visible_color_are_dropped():
     assert dropped == 1
 
 
+def test_still_video_exits_with_a_message_instead_of_crashing(tmp_path, monkeypatch):
+    import pytest
+    from motionsheet.cli import main
+    monkeypatch.setattr("sys.argv", ["motionsheet", "examples/clips/static-noise.mp4", "-o", str(tmp_path)])
+    with pytest.raises(SystemExit, match="no visible change"):
+        main()
+
 
 def _square(x):
     f = np.zeros((120, 200), np.uint8)
