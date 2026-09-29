@@ -11,7 +11,12 @@ color photographs (red, green, and blue exposures, stacked).
 Each cell is three moments of the video stacked as red, green, and blue.
 Still things cancel to gray. Anything that moved shows up in color.
 
-![screen recording, page 2](examples/screen-recording-page-2.png)
+![a desktop pet dragged across a web page](examples/screen-recording-cat-drag.png)
+
+A screen recording of a desktop pet being dragged across a page
+(`--start 00m00.50s --end 00m04.50s --fps 4`). In #4 the cat is in three
+places at once: red where it was, green, then blue where it landed. The page
+behind it didn't move, so it stays gray.
 
 ## Install
 
